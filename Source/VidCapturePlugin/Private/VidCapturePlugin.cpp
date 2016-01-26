@@ -96,24 +96,33 @@ void FVidCapturePluginModule::PluginButtonClicked()
 			int SplitscreenType = FirstPlayer->ViewportClient->GetCurrentSplitscreenConfiguration();
 			UE_LOG(ModuleLog, Warning, TEXT("splitscreen %d"), SplitscreenType);
 			
-			/*
-			// split screen for 2 players horizontal
+			
+			/*********************************************************************************/
+			/* This part is for split screen. Currently only writes to file
+			/*********************************************************************************/
 			int sizeX = ReadingViewport->GetSizeXY().X;
 			int sizeY = ReadingViewport->GetSizeXY().Y;
-			UE_LOG(ModuleLog, Warning, TEXT("Get! %d %d"), sizeX, sizeY);
-			
+			UE_LOG(ModuleLog, Warning, TEXT("Width: %d Height: %d"), sizeX, sizeY);
+
+			// split screen for 2 players horizontal
 			if (SplitscreenType == ESplitScreenType::TwoPlayer_Horizontal) {
-				Split2Player();
+				Split2Player(OutBuffer);
 			}
 
 			// split screen for 4 players
 			if (SplitscreenType == ESplitScreenType::FourPlayer) {
-				Split4Player();
+				Split4Player(OutBuffer, sizeX);
 			}
-			*/
+			
 
 			//ReadingViewport->TakeHighResScreenShot(); // for testing. works.
 
+
+			/*********************************************************************************/
+			/* This part is for writing buffer to named pipe. Is independent of split screen.
+			/*********************************************************************************/
+
+			/*
 			// write outbuffer to windows named pipe			
 			HANDLE hPipe;
 			unsigned long dwWritten;
@@ -135,6 +144,7 @@ void FVidCapturePluginModule::PluginButtonClicked()
 
 			CloseHandle(hPipe);
 			UE_LOG(ModuleLog, Warning, TEXT("Finished writing"))
+			*/
 		}
 	}
 }
@@ -142,22 +152,23 @@ void FVidCapturePluginModule::PluginButtonClicked()
 // write to file (will change to pipe later)
 void FVidCapturePluginModule::Split2Player(TArray<FColor> OutBuffer) {
 	// Player 1
-	std::ofstream myfile1("outbuffer2p1.txt");
+	std::ofstream myfile1("outbuffer2p1.txt", std::ios::out | std::ios::app | std::ios::binary);
 	if (myfile1.is_open()) {
 		for (int i = 0; i < OutBuffer.Num() / 2; i++) {
 			FColor Pixel = OutBuffer[i];
-			myfile1 << Pixel.R << " " << Pixel.G << " " << Pixel.B << " " << Pixel.A << '\n';
+			myfile1 << Pixel.R << Pixel.G << Pixel.B << Pixel.A;
 		}
 		myfile1.close();
 	}
 
 	// Player 2
-	std::ofstream myfile2("outbuffer2p2.txt");
+	std::ofstream myfile2("outbuffer2p2.txt", std::ios::out | std::ios::app | std::ios::binary);
 	if (myfile2.is_open()) {
 		for (int i = OutBuffer.Num() / 2 + 1; i < OutBuffer.Num(); i++) {
 			FColor Pixel = OutBuffer[i];
-			myfile2 << Pixel.R << " " << Pixel.G << " " << Pixel.B << " " << Pixel.A << '\n';
+			myfile2 << Pixel.R << Pixel.G << Pixel.B << Pixel.A;
 		}
+
 		myfile2.close();
 	}
 }
@@ -167,48 +178,48 @@ void FVidCapturePluginModule::Split4Player(TArray<FColor> OutBuffer, int sizeX) 
 	
 
 	// Player 1
-	std::ofstream myfile1("outbuffer4p1.txt");
+	std::ofstream myfile1("outbuffer4p1.txt", std::ios::out | std::ios::app | std::ios::binary);
 	if (myfile1.is_open()) {
 		for (int i = 0; i < OutBuffer.Num() / 2; i++) {
 			if (i % sizeX < sizeX / 2) {
 				FColor Pixel = OutBuffer[i];
-				myfile1 << Pixel.R << " " << Pixel.G << " " << Pixel.B << " " << Pixel.A << '\n';
+				myfile1 << Pixel.R << Pixel.G << Pixel.B << Pixel.A;
 			}
 		}
 		myfile1.close();
 	}
 
 	// Player 2
-	std::ofstream myfile2("outbuffer4p2.txt");
+	std::ofstream myfile2("outbuffer4p2.txt", std::ios::out | std::ios::app | std::ios::binary);
 	if (myfile2.is_open()) {
 		for (int i = 0; i < OutBuffer.Num() / 2; i++) {
 			if (i % sizeX >= sizeX / 2) {
 				FColor Pixel = OutBuffer[i];
-				myfile2 << Pixel.R << " " << Pixel.G << " " << Pixel.B << " " << Pixel.A << '\n';
+				myfile2 << Pixel.R << Pixel.G << Pixel.B << Pixel.A;
 			}
 		}
 		myfile2.close();
 	}
 
 	// Player 3
-	std::ofstream myfile3("outbuffer4p3.txt");
+	std::ofstream myfile3("outbuffer4p3.txt", std::ios::out | std::ios::app | std::ios::binary);
 	if (myfile3.is_open()) {
 		for (int i = OutBuffer.Num() / 2 + 1; i < OutBuffer.Num(); i++) {
 			if (i % sizeX < sizeX / 2) {
 				FColor Pixel = OutBuffer[i];
-				myfile3 << Pixel.R << " " << Pixel.G << " " << Pixel.B << " " << Pixel.A << '\n';
+				myfile3 << Pixel.R << Pixel.G << Pixel.B << Pixel.A;
 			}
 		}
 		myfile3.close();
 	}
 
 	// Player 4
-	std::ofstream myfile4("outbuffer4p4.txt");
+	std::ofstream myfile4("outbuffer4p4.txt", std::ios::out | std::ios::app | std::ios::binary);
 	if (myfile4.is_open()) {
 		for (int i = OutBuffer.Num() / 2 + 1; i < OutBuffer.Num(); i++) {
 			if (i % sizeX >= sizeX / 2) {
 				FColor Pixel = OutBuffer[i];
-				myfile4 << Pixel.R << " " << Pixel.G << " " << Pixel.B << " " << Pixel.A << '\n';
+				myfile4 << Pixel.R << Pixel.G << Pixel.B << Pixel.A;
 			}
 		}
 		myfile4.close();
