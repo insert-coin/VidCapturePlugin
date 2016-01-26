@@ -1,7 +1,6 @@
 // Some copyright should be here...
 
 #include "SlateBasics.h"
-
 #include "VidCapturePlugin.h"
 
 // You should place include statements to your module's private header files here.  You only need to

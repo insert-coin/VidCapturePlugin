@@ -4,6 +4,8 @@
 
 #include "ModuleManager.h"
 
+
+
 DECLARE_LOG_CATEGORY_EXTERN(ModuleLog, Log, All)
 
 class FToolBarBuilder;
@@ -19,7 +21,9 @@ public:
 	
 	/** This function will be bound to Command. */
 	void PluginButtonClicked();
-	
+
+	void Split2Player(TArray<FColor> OutBuffer);
+	void Split4Player(TArray<FColor> OutBuffer, int sizeX);
 private:
 
 	void AddToolbarExtension(FToolBarBuilder& Builder);
