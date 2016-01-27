@@ -12,4 +12,4 @@ To capture the current frame, run the game, and press the plugin's button in the
 
 Split screen - After running split screen, you need to take note of the width and height in the log. The .txt files of all player frames can be found in your Engine\Binaries\Win64 folder (at least for me). Run buffertoimg.py to convert to image. You will need to change the height and width accordingly. For 2 player, divide height by 2. For 4 player, divide both height and width by 2.
 
-Streaming - The file server.py needs to be run to open a pipe.  Currently the pixels are directly converted to string by Unreal and read as a tuple by python. This is very rough. File size is big, so only a few points are printed.
+Streaming - The file server.py needs to be run to open a pipe.  Currently the pixels are directly converted to string by Unreal and read as a tuple by python. This is very rough. File size is big, so only a few points are printed. Can try streamtest2.py as well. Converts text frame buffers to video.
