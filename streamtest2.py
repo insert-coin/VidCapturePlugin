@@ -1,12 +1,31 @@
 import cv2
 import subprocess
 import sys
+import win32pipe, win32file
 
-f = open('outbuffer4p.txt', 'rb') # input file frame - binary
-frameWidth = 428
-frameHeight = 179
+# grab frame from pipe
+p = win32pipe.CreateNamedPipe(r'\\.\pipe\test_pipe',
+    win32pipe.PIPE_ACCESS_DUPLEX,
+    win32pipe.PIPE_TYPE_BYTE | win32pipe.PIPE_READMODE_BYTE | win32pipe.PIPE_WAIT,
+    1, 65536, 65536,3000,None)
+
+win32pipe.ConnectNamedPipe(p, None)
+
+framedata = ""
+try:
+    while (1):
+        data = win32file.ReadFile(p, 4)
+        framedata = framedata + data[1][0:4]
+        
+        
+except:
+    print 'ended'
+
+#f = open('outbuffer4p.txt', 'rb') # input file frame - binary
+frameWidth = 856
+frameHeight = 358
 FPS = 1 # 1 frame per second, just for testing
-frameCount = 4
+frameCount = 1
 
 bytes_per_frame = 4 * frameWidth * frameHeight # rgba is 4 bytes
 
@@ -34,13 +53,13 @@ cmdString = ('ffmpeg.exe',
 #for fr in range(0, frameCount):
     #_,img = cap.read() # get video frame
 #print(fr)
-framedata = f.read(bytes_per_frame*frameCount)
+#framedata = f.read(bytes_per_frame*frameCount)
 pipe = subprocess.Popen(cmdString, stdin=subprocess.PIPE, shell=False)
 pipe.communicate( framedata )
 #pipe.stdin.write('test')
 
 pipe.stdin.close()
-f.close()
+#f.close()
     
     
 

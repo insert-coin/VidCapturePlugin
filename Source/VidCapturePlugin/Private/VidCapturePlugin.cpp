@@ -16,9 +16,12 @@
 
 #include <conio.h>
 #include <tchar.h>
-#include <iostream>
+#include <iostream> // can delete these for io later
 #include <fstream>
 #include <stdio.h>
+
+#include <string>
+#include <sstream>
 
 
 static const FName VidCapturePluginTabName("VidCapturePlugin");
@@ -100,6 +103,7 @@ void FVidCapturePluginModule::PluginButtonClicked()
 			/*********************************************************************************/
 			/* This part is for split screen. Currently only writes to file
 			/*********************************************************************************/
+			/*
 			int sizeX = ReadingViewport->GetSizeXY().X;
 			int sizeY = ReadingViewport->GetSizeXY().Y;
 			UE_LOG(ModuleLog, Warning, TEXT("Width: %d Height: %d"), sizeX, sizeY);
@@ -113,7 +117,7 @@ void FVidCapturePluginModule::PluginButtonClicked()
 			if (SplitscreenType == ESplitScreenType::FourPlayer) {
 				Split4Player(OutBuffer, sizeX);
 			}
-			
+			*/
 
 			//ReadingViewport->TakeHighResScreenShot(); // for testing. works.
 
@@ -122,8 +126,12 @@ void FVidCapturePluginModule::PluginButtonClicked()
 			/* This part is for writing buffer to named pipe. Is independent of split screen.
 			/*********************************************************************************/
 
-			/*
+			
 			// write outbuffer to windows named pipe			
+			int sizeX = ReadingViewport->GetSizeXY().X;
+			int sizeY = ReadingViewport->GetSizeXY().Y;
+			UE_LOG(ModuleLog, Warning, TEXT("Width: %d Height: %d"), sizeX, sizeY);
+
 			HANDLE hPipe;
 			unsigned long dwWritten;
 
@@ -134,49 +142,81 @@ void FVidCapturePluginModule::PluginButtonClicked()
 				OPEN_EXISTING,
 				0,
 				NULL);
+			int count = 0;
 			if (hPipe != INVALID_HANDLE_VALUE)
 			{
-				for (auto& Pixel : OutBuffer) {
-					std::string PixelStr(TCHAR_TO_UTF8(*Pixel.ToString()));
-					WriteFile(hPipe, PixelStr.c_str(), 30, &dwWritten, NULL);
+				std::ofstream myfile1("testingx.txt");
+				BOOL success = false;
+				
+				if (myfile1.is_open()) {
+					/*
+					for (uint32 i = 0; i < 256; i++) {
+						PixelBuffer = i + i*256 + i*256*256 + i*256*256*256;
+						myfile1 << i << i << i << i << '\n';
+						success = WriteFile(hPipe, (LPCVOID)&PixelBuffer, 4, &dwWritten, NULL);
+					}
+					*/
+					
+
+					uint32 PixelBuffer;
+					for (auto& Pixel : OutBuffer) {
+						std::ostringstream PixelStream;
+						PixelBuffer = Pixel.A * 256 * 256 * 256 + Pixel.B * 256 * 256 + Pixel.G * 256 + Pixel.R;
+						myfile1 << Pixel.R << Pixel.G << Pixel.B << Pixel.A << '\n';
+
+						// convert stream to lpcvoid to write, 4 colour bytes + string terminating char
+						success = WriteFile(hPipe, (LPCVOID)&PixelBuffer, 4, &dwWritten, NULL);
+						if (success) {
+							count++;
+						}
+						
+					}
+					
 				}
+				myfile1.close();
+				
 			}
 
 			CloseHandle(hPipe);
-			UE_LOG(ModuleLog, Warning, TEXT("Finished writing"))
-			*/
+			UE_LOG(ModuleLog, Warning, TEXT("Finished writing. Total %d pixels."), count)
+			
 		}
 	}
 }
 
+
 // write to file (will change to pipe later)
 void FVidCapturePluginModule::Split2Player(TArray<FColor> OutBuffer) {
+
+
 	// Player 1
 	std::ofstream myfile1("outbuffer2p1.txt", std::ios::out | std::ios::app | std::ios::binary);
 	if (myfile1.is_open()) {
 		for (int i = 0; i < OutBuffer.Num() / 2; i++) {
 			FColor Pixel = OutBuffer[i];
-			myfile1 << Pixel.R << Pixel.G << Pixel.B << Pixel.A;
+			myfile1 << Pixel.R << Pixel.G << Pixel.B << Pixel.A;		
 		}
 		myfile1.close();
+	
 	}
 
 	// Player 2
 	std::ofstream myfile2("outbuffer2p2.txt", std::ios::out | std::ios::app | std::ios::binary);
 	if (myfile2.is_open()) {
-		for (int i = OutBuffer.Num() / 2 + 1; i < OutBuffer.Num(); i++) {
+		for (int i = OutBuffer.Num() / 2; i < OutBuffer.Num(); i++) {
 			FColor Pixel = OutBuffer[i];
 			myfile2 << Pixel.R << Pixel.G << Pixel.B << Pixel.A;
+			
 		}
 
 		myfile2.close();
+	
 	}
 }
 
 // write to file (will change to pipe later)
 void FVidCapturePluginModule::Split4Player(TArray<FColor> OutBuffer, int sizeX) {
 	
-
 	// Player 1
 	std::ofstream myfile1("outbuffer4p1.txt", std::ios::out | std::ios::app | std::ios::binary);
 	if (myfile1.is_open()) {
@@ -188,7 +228,7 @@ void FVidCapturePluginModule::Split4Player(TArray<FColor> OutBuffer, int sizeX) 
 		}
 		myfile1.close();
 	}
-
+	
 	// Player 2
 	std::ofstream myfile2("outbuffer4p2.txt", std::ios::out | std::ios::app | std::ios::binary);
 	if (myfile2.is_open()) {
@@ -204,7 +244,7 @@ void FVidCapturePluginModule::Split4Player(TArray<FColor> OutBuffer, int sizeX) 
 	// Player 3
 	std::ofstream myfile3("outbuffer4p3.txt", std::ios::out | std::ios::app | std::ios::binary);
 	if (myfile3.is_open()) {
-		for (int i = OutBuffer.Num() / 2 + 1; i < OutBuffer.Num(); i++) {
+		for (int i = OutBuffer.Num() / 2; i < OutBuffer.Num(); i++) {
 			if (i % sizeX < sizeX / 2) {
 				FColor Pixel = OutBuffer[i];
 				myfile3 << Pixel.R << Pixel.G << Pixel.B << Pixel.A;
